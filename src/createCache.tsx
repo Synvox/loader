@@ -1,4 +1,4 @@
-import { CacheStorage, CacheEntry, FetchOptions, Fetch } from './types';
+import { CacheStorage, CacheEntry, Loader } from './types';
 
 export class FetchError extends Error {
   response: Response;
@@ -8,82 +8,61 @@ export class FetchError extends Error {
   }
 }
 
-export function createCache() {
+export function createCache(loader: Loader) {
   const cache: CacheStorage = {};
   return {
-    get<Result>(url: string) {
-      return cache[url] as CacheEntry<Result>;
+    get<Result>(key: string) {
+      return cache[key] as CacheEntry<Result>;
     },
 
-    set<Result>(url: string, patch: Partial<CacheEntry<Result>>) {
-      const entry = cache[url] ?? {
+    set<Result>(key: string, patch: Partial<CacheEntry<Result>>) {
+      const entry = cache[key] ?? {
         subscribers: new Set(),
       };
       Object.assign(entry, patch);
-      cache[url] = entry;
+      cache[key] = entry;
       entry.subscribers.forEach(fn => fn());
-      if (entry.subscribers.size === 0) this.scheduleRemoval(url);
+      if (entry.subscribers.size === 0) this.scheduleRemoval(key);
     },
 
-    async load({
-      fetch,
-      method,
-      url,
-      body,
-      headers = new Headers(),
-    }: FetchOptions) {
-      headers.append('Content-Type', 'application/json');
-      return fetch(url, {
-        method,
-        body: typeof body !== 'undefined' ? JSON.stringify(body) : undefined,
-        headers: headers,
-      }).then(async res => {
-        if (!res.ok) throw new FetchError(res);
-        return res.json();
-      });
+    async load(key: string) {
+      return loader(key);
     },
 
-    subscribe(url: string, callback: () => void) {
-      const cacheEntry = cache[url];
-      if (!cacheEntry)
-        throw new Error(`Cannot subscribe to ${url} because it does not exist`);
+    subscribe(key: string, callback: () => void) {
+      const cacheEntry = cache[key];
+      if (!cacheEntry) return;
 
       clearTimeout(cacheEntry.destroyTimeout);
       cacheEntry.subscribers.add(callback);
     },
 
-    unsubscribe(url: string, callback: () => void) {
-      const cacheEntry = cache[url];
-      if (!cacheEntry)
-        throw new Error(
-          `Cannot unsubscribe from ${url} because it does not exist`
-        );
+    unsubscribe(key: string, callback: () => void) {
+      const cacheEntry = cache[key];
+      if (!cacheEntry) return;
 
       cacheEntry.subscribers.delete(callback);
     },
 
-    scheduleRemoval(url: string) {
-      const cacheEntry = cache[url];
-      if (!cacheEntry)
-        throw new Error(
-          `Cannot unsubscribe from ${url} because it does not exist`
-        );
+    scheduleRemoval(key: string) {
+      const cacheEntry = cache[key];
+      if (!cacheEntry) return;
 
       window.clearTimeout(cacheEntry.destroyTimeout);
       cacheEntry.destroyTimeout = window.setTimeout(() => {
-        this.delete(url);
+        this.delete(key);
       }, 3 * 60 * 1000);
     },
 
-    delete(url: string) {
-      delete cache[url];
+    delete(key: string) {
+      delete cache[key];
     },
 
-    async touch(url: string, fetch: Fetch) {
+    async touch(searchKey: string) {
       const keys = Object.keys(cache);
       const touchedKeys: string[] = [];
       for (let key of keys) {
-        if (key.includes(url)) {
+        if (key.includes(searchKey)) {
           touchedKeys.push(key);
         }
       }
@@ -98,13 +77,11 @@ export function createCache() {
           continue;
         }
 
-        const promise = this.load({ fetch, url: key, method: 'get' }).then(
-          data => {
-            this.set(url, { data });
-          }
-        );
+        const promise = this.load(key).then(data => {
+          this.set(key, { data });
+        });
 
-        this.set(url, { promise });
+        this.set(key, { promise });
         promises.push(promise);
       }
 

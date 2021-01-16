@@ -15,16 +15,10 @@ export type CacheEntry<Result> = {
 };
 export type CacheStorage = Record<string, CacheEntry<unknown>>;
 
-export type Fetch = typeof window.fetch;
-export interface FetchOptions {
-  fetch: Fetch;
-  method: string;
-  url: string;
-  body?: Json;
-  headers?: Headers;
-}
-export interface ExecProps extends FetchOptions {
-  suspend?: boolean;
+export interface ExecProps {
+  key: string;
   subscriptionCallback?: SubscriptionCallback;
 }
 export type Cache = ReturnType<typeof createCache>;
+
+export type Loader = <T>(key: string) => Promise<T>;

@@ -9,58 +9,45 @@ function useForceUpdate() {
 }
 
 export function createApi(
-  fetch: typeof window.fetch,
   cache: Cache,
   modifier: <In, Out>(
     obj: In,
-    get: <T>(url: string, options: ExecProps) => T
+    get: <T>(key: string, options: ExecProps) => T
   ) => Out
 ) {
-  function exec<Result>({
-    method,
-    url,
-    body,
-    headers,
-    subscriptionCallback,
-  }: ExecProps): Result {
-    const cacheEntry = cache.get<Result>(url);
+  function exec<Result>({ key, subscriptionCallback }: ExecProps): Result {
+    const cacheEntry = cache.get<Result>(key);
     if (cacheEntry) {
-      if (subscriptionCallback) cache.subscribe(url, subscriptionCallback);
+      if (subscriptionCallback) cache.subscribe(key, subscriptionCallback);
       if (cacheEntry.data) return cacheEntry.data;
       if (cacheEntry.promise) throw cacheEntry.promise;
       if (cacheEntry.error) throw cacheEntry.error;
     }
 
-    const promise = cache.load({ fetch, url, headers, body, method });
-    if (subscriptionCallback) cache.subscribe(url, subscriptionCallback);
+    const promise = cache.load(key);
+    if (subscriptionCallback) cache.subscribe(key, subscriptionCallback);
 
     throw promise;
   }
 
-  function get<Result>(url: string, options: ExecProps) {
-    return exec<Result>({
-      ...options,
-      suspend: true,
-      url,
-    });
+  function get<Result>(key: string) {
+    return exec<Result>({ key });
   }
 
-  function useUrl() {
+  function useKey() {
     const forceUpdate = useForceUpdate();
     const subscription = useState(() => forceUpdate)[0];
-    const [previouslySubscribedUrls] = useState<Set<string>>(() => new Set());
+    const [previouslySubscribedKeys] = useState<Set<string>>(() => new Set());
     const dataMap = useState<WeakMap<object, unknown>>(() => new WeakMap())[0];
-    const subscribedUrls = new Set<string>();
+    const subscribedKeys = new Set<string>();
 
-    const get = <Result>(url: string, options: ExecProps) => {
+    const get = <Result>(key: string) => {
       const result = exec<any>({
-        ...options,
-        suspend: true,
-        url,
+        key,
         subscriptionCallback: subscription,
       });
 
-      subscribedUrls.add(url);
+      subscribedKeys.add(key);
 
       if (dataMap.has(result)) return dataMap.get(result) as Result;
       const modifiedResult: Result = modifier<any, Result>(result, get);
@@ -69,17 +56,17 @@ export function createApi(
       return modifiedResult;
     };
 
-    // unsubscribe from previously used urls
+    // unsubscribe from previously used keys
     useLayoutEffect(() => {
-      Array.from(previouslySubscribedUrls)
-        .filter(url => !subscribedUrls.has(url))
-        .forEach(url => {
-          previouslySubscribedUrls.delete(url);
-          cache.unsubscribe(url, subscription);
+      Array.from(previouslySubscribedKeys)
+        .filter(key => !subscribedKeys.has(key))
+        .forEach(key => {
+          previouslySubscribedKeys.delete(key);
+          cache.unsubscribe(key, subscription);
         });
 
-      subscribedUrls.forEach(url => {
-        previouslySubscribedUrls.add(url);
+      subscribedKeys.forEach(key => {
+        previouslySubscribedKeys.add(key);
       });
     });
 
@@ -96,9 +83,9 @@ export function createApi(
     }
   }
 
-  async function touch(url: string) {
-    await cache.touch(url, fetch);
+  async function touch(key: string) {
+    await cache.touch(key);
   }
 
-  return { useUrl, preload, touch };
+  return { useKey, preload, touch };
 }
