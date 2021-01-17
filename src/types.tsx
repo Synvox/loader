@@ -1,11 +1,7 @@
-import { createCache } from './createCache';
+import { createCache } from './cache';
 
 type SubscriptionCallback = () => void;
-export type Json = boolean | number | string | null | JsonArray | JsonObject;
-interface JsonObject {
-  [key: string]: Json;
-}
-interface JsonArray extends Array<Json> {}
+
 export type CacheEntry<Result> = {
   subscribers: Set<SubscriptionCallback>;
   data?: Result;

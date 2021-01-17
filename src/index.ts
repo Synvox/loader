@@ -24,7 +24,16 @@ export function createApi(
       if (cacheEntry.error) throw cacheEntry.error;
     }
 
-    const promise = cache.load(key);
+    const promise = cache
+      .load(key)
+      .then(data => {
+        cache.set(key, { data, promise: undefined, error: undefined });
+      })
+      .catch(err => {
+        cache.set(key, { error: err, data: undefined, promise: undefined });
+      });
+
+    cache.set(key, { promise });
     if (subscriptionCallback) cache.subscribe(key, subscriptionCallback);
 
     throw promise;
@@ -83,8 +92,8 @@ export function createApi(
     }
   }
 
-  async function touch(key: string) {
-    await cache.touch(key);
+  async function touch(filter: (key: string) => boolean) {
+    await cache.touch(filter);
   }
 
   return { useKey, preload, touch };

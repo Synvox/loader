@@ -1,13 +1,5 @@
 import { CacheStorage, CacheEntry, Loader } from './types';
 
-export class FetchError extends Error {
-  response: Response;
-  constructor(response: Response) {
-    super(response.statusText);
-    this.response = response;
-  }
-}
-
 export function createCache(loader: Loader) {
   const cache: CacheStorage = {};
   return {
@@ -58,11 +50,11 @@ export function createCache(loader: Loader) {
       delete cache[key];
     },
 
-    async touch(searchKey: string) {
+    async touch(filter: (key: string) => boolean) {
       const keys = Object.keys(cache);
       const touchedKeys: string[] = [];
       for (let key of keys) {
-        if (key.includes(searchKey)) {
+        if (filter(key)) {
           touchedKeys.push(key);
         }
       }
@@ -77,11 +69,15 @@ export function createCache(loader: Loader) {
           continue;
         }
 
-        const promise = this.load(key).then(data => {
-          this.set(key, { data });
-        });
+        const promise = this.load(key)
+          .then(data => {
+            this.set(key, { data, promise: undefined, error: undefined });
+          })
+          .catch(err => {
+            this.set(key, { error: err, data: undefined, promise: undefined });
+          });
 
-        this.set(key, { promise });
+        this.set(key, { promise, error: undefined });
         promises.push(promise);
       }
 
