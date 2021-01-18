@@ -40,8 +40,7 @@ export default class Cache<Key> {
   }
 
   subscribe(key: Key, callback: () => void) {
-    const cacheEntry = this.cacheStorage.get(key);
-    if (!cacheEntry) return;
+    const cacheEntry = this.cacheStorage.get(key)!;
     if (cacheEntry.subscribers.has(callback)) return;
 
     clearTimeout(cacheEntry.destroyTimeout);
@@ -49,9 +48,7 @@ export default class Cache<Key> {
   }
 
   unsubscribe(key: Key, callback: () => void) {
-    const cacheEntry = this.cacheStorage.get(key);
-    if (!cacheEntry) return;
-    if (!cacheEntry.subscribers.has(callback)) return;
+    const cacheEntry = this.cacheStorage.get(key)!;
 
     cacheEntry.subscribers.delete(callback);
 
@@ -59,8 +56,7 @@ export default class Cache<Key> {
   }
 
   scheduleRemoval(key: Key) {
-    const cacheEntry = this.cacheStorage.get(key);
-    if (!cacheEntry) return;
+    const cacheEntry = this.cacheStorage.get(key)!;
 
     window.clearTimeout(cacheEntry.destroyTimeout);
     cacheEntry.destroyTimeout = window.setTimeout(() => {
@@ -98,8 +94,4 @@ export default class Cache<Key> {
     const commitFns = await Promise.all(promises);
     commitFns.forEach(fn => fn());
   }
-}
-
-export function createCache<Key>(loader: Loader<Key>) {
-  return new Cache<Key>(loader);
 }

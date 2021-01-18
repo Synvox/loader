@@ -19,6 +19,14 @@ function useForceUpdate() {
   return forceUpdate;
 }
 
+function isPromise(value: any): value is Promise<unknown> {
+  return (
+    value &&
+    (typeof value === 'object' || typeof value === 'function') &&
+    typeof value.then === 'function'
+  );
+}
+
 export function createApi<Key>({
   cache,
   modifier = (x: any) => x,
@@ -31,7 +39,7 @@ export function createApi<Key>({
     if (cacheEntry) {
       if (cacheEntry.data) return cacheEntry.data;
       if (cacheEntry.promise) throw cacheEntry.promise;
-      if (cacheEntry.error) throw cacheEntry.error;
+      throw cacheEntry.error;
     }
 
     throw cache.load(key).then(commit => commit());
@@ -58,7 +66,7 @@ export function createApi<Key>({
       } catch (e) {
         const thrown = e as Error | Promise<Result>;
 
-        if (thrown instanceof Error) {
+        if (!isPromise(thrown)) {
           cache.subscribe(key, subscription);
           throw e;
         }
@@ -93,12 +101,13 @@ export function createApi<Key>({
     return hookGet;
   }
 
-  async function preload(fn: (g: typeof get) => void) {
+  async function preload<T>(fn: (g: typeof get) => T) {
     while (true) {
       try {
         return fn(get);
       } catch (e) {
-        if (e instanceof Error) throw e;
+        if (!isPromise(e)) throw e;
+        await e;
       }
     }
   }
@@ -107,5 +116,10 @@ export function createApi<Key>({
     await cache.touch(filter);
   }
 
-  return { useKey, preload, touch };
+  return {
+    get,
+    useKey,
+    preload,
+    touch,
+  };
 }
