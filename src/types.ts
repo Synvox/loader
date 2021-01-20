@@ -6,6 +6,7 @@ export type CacheEntry<Result> = {
   promise?: Promise<Result>;
   error?: Error;
   destroyTimeout?: number;
+  refreshTimeout?: number;
 };
 
 export type CacheStorage<Key> = Map<Key, CacheEntry<unknown>>;

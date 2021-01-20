@@ -110,6 +110,7 @@ it('suspends and loads', async () => {
       },
       "error": undefined,
       "promise": undefined,
+      "refreshTimeout": undefined,
       "subscribers": Set {
         [Function],
       },
@@ -146,6 +147,7 @@ it('preloads', async () => {
       },
       "error": undefined,
       "promise": undefined,
+      "refreshTimeout": undefined,
       "subscribers": Set {},
     }
   `);
@@ -162,6 +164,7 @@ it('preloads', async () => {
       "data": undefined,
       "error": [Error: I throw on zero],
       "promise": undefined,
+      "refreshTimeout": undefined,
       "subscribers": Set {},
     }
   `);
