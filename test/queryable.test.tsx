@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react-hooks';
-import { createApi, Cache } from '../src';
+import { createLoader, Cache } from '../src';
 
 jest.useFakeTimers();
 
@@ -27,7 +27,7 @@ it('works with object keys', async () => {
 
   const cache = new Cache(async (query: Query) => [[query, await query.run()]]);
 
-  const { useKey: useGet } = createApi({ cache });
+  const { useKey: useGet } = createLoader({ cache });
   const query = new UserQuery('1');
 
   const { result, waitForNextUpdate } = renderHook(
