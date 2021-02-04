@@ -25,7 +25,7 @@ it('works with object keys', async () => {
     urlBase = '/users';
   }
 
-  const cache = new Cache(async (query: Query) => query.run());
+  const cache = new Cache(async (query: Query) => [[query, await query.run()]]);
 
   const { useKey: useGet } = createApi({ cache });
   const query = new UserQuery('1');

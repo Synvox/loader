@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react-hooks';
 import { act } from 'react-dom/test-utils';
-import { createApi, Cache } from '../src';
+import { createLoader, Cache } from '../src';
 
 jest.useFakeTimers();
 
@@ -8,14 +8,19 @@ it('suspends and loads', async () => {
   let divideBy = 2;
   const cache = new Cache(async (num: number) => {
     if (divideBy === 0) throw new Error('Cannot divide by zero');
-    return {
-      value: num / divideBy,
-      divideBy,
-      num,
-    };
+    return [
+      [
+        num,
+        {
+          value: num / divideBy,
+          divideBy,
+          num,
+        },
+      ],
+    ];
   });
 
-  const { useKey: useDivide, touch } = createApi({ cache });
+  const { useKey: useDivide, touch } = createLoader({ cache });
   let error: Error | null = null;
   let didSuspend: boolean = false;
 
@@ -126,12 +131,17 @@ it('suspends and loads', async () => {
 it('preloads', async () => {
   const cache = new Cache(async (num: number) => {
     if (num === 0) throw new Error('I throw on zero');
-    return {
-      value: num * 2,
-    };
+    return [
+      [
+        num,
+        {
+          value: num * 2,
+        },
+      ],
+    ];
   });
 
-  const { preload, get: double } = createApi({ cache });
+  const { preload, get: double } = createLoader({ cache });
 
   expect(
     await preload(() => {

@@ -27,7 +27,7 @@ function isPromise(value: any): value is Promise<unknown> {
   );
 }
 
-export function createApi<Key>({
+export function createLoader<Key>({
   cache,
   modifier = (x: any) => x,
 }: {

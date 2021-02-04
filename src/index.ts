@@ -1,5 +1,5 @@
 import Cache from './cache';
-import { createApi } from './createApi';
+import { createLoader } from './createLoader';
 import {
   SubscriptionCallback,
   CacheEntry,
@@ -8,7 +8,7 @@ import {
 } from './types';
 
 export {
-  createApi,
+  createLoader,
   Cache,
   SubscriptionCallback,
   CacheEntry,

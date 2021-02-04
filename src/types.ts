@@ -11,4 +11,4 @@ export type CacheEntry<Result> = {
 
 export type CacheStorage<Key> = Map<Key, CacheEntry<unknown>>;
 
-export type Loader<Key> = (key: Key) => Promise<unknown>;
+export type Loader<Key> = (key: Key) => Promise<[Key, unknown][]>;

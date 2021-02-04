@@ -6,6 +6,7 @@ type Options = {
   cacheLife?: number;
   retryDelay?: (attempt: number, err: Error) => number;
 };
+
 export default class Cache<Key> {
   private loader: Loader<Key>;
   private cacheStorage: CacheStorage<Key>;
@@ -59,10 +60,12 @@ export default class Cache<Key> {
       const promise = this.loader(key);
       this.set(key, { promise });
 
-      const data = await promise;
+      const patches = await promise;
 
       return () => {
-        this.set(key, { data, promise: undefined, error: undefined });
+        for (let [key, data] of patches) {
+          this.set(key, { data, promise: undefined, error: undefined });
+        }
       };
     } catch (error) {
       if (retriesRemaining > 0) {

@@ -33,16 +33,16 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "name": "useapi2",
+  "name": "@synvox/loader",
   "author": "Ryan Allred",
-  "module": "dist/useapi2.esm.js",
+  "module": "dist/loader.esm.js",
   "size-limit": [
     {
-      "path": "dist/useapi2.cjs.production.min.js",
+      "path": "dist/loader.cjs.production.min.js",
       "limit": "10 KB"
     },
     {
-      "path": "dist/useapi2.esm.js",
+      "path": "dist/loader.esm.js",
       "limit": "10 KB"
     }
   ],
