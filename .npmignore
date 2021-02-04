@@ -1,0 +1,6 @@
+.github/workflows/main.yml
+.github/workflows/size.yml
+example/index.html
+example/index.tsx
+example/tsconfig.json
+tsconfig.json
