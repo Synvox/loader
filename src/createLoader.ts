@@ -46,21 +46,33 @@ export function createLoader<Key>({
   }
 
   function useKey() {
+    type DataMapValue = { keys: Set<Key>; value: unknown };
     const forceUpdate = useForceUpdate();
     const subscription = useRef<SubscriptionCallback>(forceUpdate).current;
     const previouslySubscribedKeys = useRef<Set<Key>>(new Set()).current;
-    const dataMap = useState<WeakMap<object, unknown>>(() => new WeakMap())[0];
+    const dataMap = useState<WeakMap<object, DataMapValue>>(
+      () => new WeakMap()
+    )[0];
     const subscribedKeys = new Set<Key>();
 
-    const hookGet = <Result>(key: Key) => {
-      subscribedKeys.add(key);
+    const hookGet = <Result>(key: Key, subKeys: Set<Key> = subscribedKeys) => {
+      subKeys.add(key);
       try {
         const result = get<any>(key);
-
-        if (dataMap.has(result)) return dataMap.get(result) as Result;
-        const modifiedResult: Result = modifier<any, Result>(result, get);
-        dataMap.set(result, modifiedResult);
         cache.subscribe(key, subscription);
+
+        if (dataMap.has(result)) {
+          const { keys, value } = dataMap.get(result) as DataMapValue;
+          keys.forEach(key => subKeys.add(key));
+          return value as Result;
+        }
+
+        const modifierKeys = new Set<Key>();
+        const modifiedResult: Result = modifier<any, Result>(
+          result,
+          (key: Key) => hookGet(key, modifierKeys)
+        );
+        dataMap.set(result, { keys: modifierKeys, value: modifiedResult });
 
         return modifiedResult;
       } catch (e) {
